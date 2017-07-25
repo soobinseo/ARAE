@@ -5,7 +5,7 @@ While the Paper used the Stanford Natural Language Inference dataset for the tex
 I implemented the continuous version for this implementaion, but discrete version is implemented as footnote in this code.
 
 <p>
-  <img src="https://raw.githubusercontent.com/soobin3230/ARAE/master/png/map.png width="1024"/>
+  <img src="https://raw.githubusercontent.com/soobin3230/ARAE/master/png/map.png" width="1024"/>
 </p>
 
 ## Dependencies
