@@ -1,0 +1,5 @@
+.idea/*
+MNIST_data/*
+result/*
+result_normal/*
+*.pyc
