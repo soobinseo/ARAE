@@ -169,7 +169,7 @@ class ARAE_text(object):
         # WGAN loss
         self.disc_real_loss = tf.reduce_mean(critic_real)
         self.disc_fake_loss = -tf.reduce_mean(critic_fake)
-        self.critic_loss = tf.reduce_mean(critic_real - critic_fake)
+        self.critic_loss = tf.reduce_mean(critic_real) - tf.reduce_mean(critic_fake)
         self.gen_loss = tf.reduce_mean(critic_fake)
 
         # for discrete input, use cross entropy loss
@@ -224,7 +224,7 @@ class ARAE_text(object):
                     _, _AEloss = sess.run([self.update_AE, self.AE_loss], feed_dict={self.x:x, self.seq_len:seq_len})
 
                     # update critic & encoder at positive sample phase
-                    for j in range(5):
+                    for k in range(5):
                         _, _critic_loss, real_loss = sess.run(
                             [self.update_critic_pos, self.critic_loss, self.disc_real_loss],
                             feed_dict={self.x:x, self.seq_len:seq_len, self.z: z_in})
@@ -240,6 +240,7 @@ class ARAE_text(object):
                         real_pred = sess.run(self.real_pred, feed_dict={self.x:x, self.seq_len:seq_len})
                         fake_pred = sess.run(self.fake_pred, feed_dict={self.z:z_in})
 
+                        print [self.reverse_dict[idx] for idx in x[0]]
                         print [self.reverse_dict[idx] for idx in real_pred[0]]
                         print [self.reverse_dict[idx] for idx in fake_pred[0]]
 
