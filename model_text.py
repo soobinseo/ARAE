@@ -9,8 +9,8 @@ __author__ = "soobinseo"
 
 
 class ARAE_text(object):
-    def __init__(self, EPOCH=100000, BATCH_SIZE=32, embedding_size=300,
-                 NUM_UNITS=300):
+    def __init__(self, EPOCH=100000, batch_size=32, embedding_size=300,
+                 num_units=300):
         """
         https://arxiv.org/abs/1706.04223
         While handling discrete outputs, gradients do not flow over the network parameters, so this paper
@@ -27,9 +27,10 @@ class ARAE_text(object):
         self.critic_lr= 0.00001
         self.gen_lr = 0.00005
         self.EPOCH = EPOCH
-        self.batch_size = BATCH_SIZE
-        self.num_units = NUM_UNITS
+        self.batch_size = batch_size
+        self.num_units = num_units
         self.data, self.sequence_length, self.dict = get_batch()
+        self.num_batch = len(self.data) // self.batch_size
         self.reverse_dict = {v: k for k, v in self.dict.iteritems()}
         self.voca_size = len(self.dict)
         self.max_len = 30
@@ -49,10 +50,10 @@ class ARAE_text(object):
         with tf.variable_scope("encoder"):
             tensor = tf.nn.embedding_lookup(self.embedding, tensor)
             cell = tf.nn.rnn_cell.BasicLSTMCell(self.num_units)
-            outputs, state = tf.nn.dynamic_rnn(cell, tensor, sequence_length=self.sequence_length, dtype=tf.float32)
+            outputs, state = tf.nn.dynamic_rnn(cell, tensor, sequence_length=self.seq_len, dtype=tf.float32)
             output = outputs[:,-1,:]
             output = tf.nn.l2_normalize(output, -1)
-            print output
+
             return output
 
     def decoder(self, tensor, reuse=False):
@@ -81,19 +82,17 @@ class ARAE_text(object):
             # initial_state = state = decoder_input
             initial_state = tf.zeros([self.batch_size, self.num_units])
             initial_state = tf.concat([initial_state, decoder_input], 1)
-            print initial_state
+
 
             for i in range(self.max_len):
                 if i == 0:
                     # start of sequence
                     input_ = tf.nn.embedding_lookup(self.embedding, tf.ones([self.batch_size], dtype=tf.int32))
                     state = initial_state
-                    print input_
+
                 else:
                     scope.reuse_variables()
                     input_ = tf.nn.embedding_lookup(self.embedding, prediction)
-                    print "2"
-                    print input_
 
                 output, state = cell(input_, state)
                 output = tf.concat([output, tensor], -1)
@@ -156,12 +155,12 @@ class ARAE_text(object):
         build network
         :return:
         """
-
+        self.x = tf.placeholder(tf.int32, [None, self.max_len], name="input_")
         self.z = tf.placeholder(tf.float32, [None, 100], name="z")
-        labels = tf.one_hot(self.data, self.voca_size)
-        print "labels"
-        print labels
-        AE_out, real_latent = self.autoencoder(self.data)
+        self.seq_len = tf.placeholder(tf.int32, [None], name="seq_len")
+        labels = tf.one_hot(self.x, self.voca_size)
+
+        AE_out, real_latent = self.autoencoder(self.x)
 
         g_latent = self.generator(self.z)
         critic_real = self.critic(real_latent)
@@ -215,31 +214,34 @@ class ARAE_text(object):
             sess.run(init)
             # batch = self.mnist.train.next_batch(self.BATCH_SIZE)
             for i in range(self.EPOCH):
-                # standard normal distribution for input noise z
-                z_in = np.random.standard_normal(size=[self.batch_size, 100]).astype(np.float32)
+                for j in range(self.num_batch):
+                    x = self.data[j*self.batch_size:(j+1)*self.batch_size]
+                    seq_len = self.sequence_length[j*self.batch_size:(j+1)*self.batch_size]
+                    # standard normal distribution for input noise z
+                    z_in = np.random.standard_normal(size=[self.batch_size, 100]).astype(np.float32)
 
-                # update AE
-                _, _AEloss = sess.run([self.update_AE, self.AE_loss])
+                    # update AE
+                    _, _AEloss = sess.run([self.update_AE, self.AE_loss], feed_dict={self.x:x, self.seq_len:seq_len})
 
-                # update critic & encoder at positive sample phase
-                for j in range(5):
-                    _, _critic_loss, real_loss = sess.run(
-                        [self.update_critic_pos, self.critic_loss, self.disc_real_loss],
-                        feed_dict={self.z: z_in})
-                    _ = sess.run(self.update_critic_neg, feed_dict={self.z: z_in})
+                    # update critic & encoder at positive sample phase
+                    for j in range(5):
+                        _, _critic_loss, real_loss = sess.run(
+                            [self.update_critic_pos, self.critic_loss, self.disc_real_loss],
+                            feed_dict={self.x:x, self.seq_len:seq_len, self.z: z_in})
+                        _ = sess.run(self.update_critic_neg, feed_dict={self.z: z_in})
 
-                # update generator
-                _, GAN_loss = sess.run([self.update_G, self.gen_loss], feed_dict={self.z: z_in})
+                    # update generator
+                    _, GAN_loss = sess.run([self.update_G, self.gen_loss], feed_dict={self.z: z_in})
 
-                if i % 1 == 0:
-                    print "step %d, AEloss: %.4f,   real_loss: %.6f, gen_loss: %.6f, critic_loss:%.6f" % (
-                    i, _AEloss, real_loss, GAN_loss, _critic_loss)
+                    if j % 10 == 0:
+                        print "step %d, AEloss: %.4f,   real_loss: %.6f, gen_loss: %.6f, critic_loss:%.6f" % (
+                        i, _AEloss, real_loss, GAN_loss, _critic_loss)
 
-                    real_pred = sess.run(self.real_pred)
-                    fake_pred = sess.run(self.fake_pred, feed_dict={self.z:z_in})
+                        real_pred = sess.run(self.real_pred, feed_dict={self.x:x, self.seq_len:seq_len})
+                        fake_pred = sess.run(self.fake_pred, feed_dict={self.z:z_in})
 
-                    print [self.reverse_dict[idx] for idx in real_pred]
-                    print [self.reverse_dict[idx] for idx in fake_pred]
+                        print [self.reverse_dict[idx] for idx in real_pred[0]]
+                        print [self.reverse_dict[idx] for idx in fake_pred[0]]
 
 
                 # save generated image

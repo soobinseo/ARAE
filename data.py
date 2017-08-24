@@ -58,17 +58,17 @@ def get_batch(batch_size=32, is_training=True):
     data_len = len(X)
     num_batch = data_len // batch_size
 
-    X = tf.convert_to_tensor(X, tf.int32)
-    seq_len = tf.convert_to_tensor(seq_len, tf.int32)
-    input_queues = tf.train.slice_input_producer([X, seq_len])
-
-    source, sequence_length = tf.train.shuffle_batch(input_queues,
-                                    num_threads=8,
-                                    batch_size=batch_size,
-                                    capacity=batch_size * 64,
-                                    min_after_dequeue=batch_size * 32,
-                                    allow_smaller_final_batch=False)
+    # X = tf.convert_to_tensor(X, tf.int32)
+    # seq_len = tf.convert_to_tensor(seq_len, tf.int32)
+    # input_queues = tf.train.slice_input_producer([X, seq_len])
+    #
+    # source, sequence_length = tf.train.shuffle_batch(input_queues,
+    #                                 num_threads=8,
+    #                                 batch_size=batch_size,
+    #                                 capacity=batch_size * 64,
+    #                                 min_after_dequeue=batch_size * 32,
+    #                                 allow_smaller_final_batch=False)
 
     print "data loaded. (total data=%d, total batch=%d)" % (data_len, num_batch)
 
-    return source, sequence_length, dict_
+    return X, seq_len, dict_
