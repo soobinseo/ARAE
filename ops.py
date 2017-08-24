@@ -110,6 +110,8 @@ def normalize(inputs,
 
     return outputs
 
+
+
 def gaussian_noise_layer(input_layer, std):
     noise = tf.random_normal(shape=tf.shape(input_layer), mean=0.0, stddev=std, dtype=tf.float32)
     return input_layer + noise

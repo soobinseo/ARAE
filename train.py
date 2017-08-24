@@ -1,5 +1,5 @@
-from model import ARAE
+from model_text import ARAE_text
 
 if __name__ == '__main__':
-    arae = ARAE()
+    arae = ARAE_text()
     arae.train()

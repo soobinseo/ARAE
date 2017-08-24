@@ -3,3 +3,4 @@ MNIST_data/*
 result/*
 result_normal/*
 *.pyc
+ko_en_parallel_corpus/*

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 import os
+from data import get_batch
 
 __author__ = "soobinseo"
 
@@ -38,14 +39,11 @@ class ARAE(object):
         :return: 2-D tensor. encoded latent vector
         """
         with tf.variable_scope("encoder"):
-            if is_mnist:
-                fc_784 = fully_connected(tensor, 784, self.initializer, scope="fc_784")
-                fc_800 = fully_connected(fc_784, 800, self.initializer, scope="fc_800")
-                fc_400 = fully_connected(fc_800, 400, self.initializer, scope="fc_400")
-                output = fully_connected(fc_400, output_dim, self.initializer, is_last=True, scope="encoder_output")
 
-            else:
-                pass
+            fc_784 = fully_connected(tensor, 784, self.initializer, scope="fc_784")
+            fc_800 = fully_connected(fc_784, 800, self.initializer, scope="fc_800")
+            fc_400 = fully_connected(fc_800, 400, self.initializer, scope="fc_400")
+            output = fully_connected(fc_400, output_dim, self.initializer, is_last=True, scope="encoder_output")
 
             return output
 
@@ -59,16 +57,14 @@ class ARAE(object):
         :return: 2-D tensor. decoded vector (image)
         """
         with tf.variable_scope("decoder", reuse=reuse):
-            if is_mnist:
-                # add gausian noise
-                tensor = gaussian_noise_layer(tensor, 0.4)
-                fc_400 = fully_connected(tensor, 400, self.initializer, is_decoder=True, scope="fc_400")
-                fc_800 = fully_connected(fc_400, 800, self.initializer, is_decoder=True, scope="fc_800")
-                fc_1000 = fully_connected(fc_800, 1000, self.initializer, is_decoder=True, scope="fc_1000")
-                output = fully_connected(fc_1000, output_dim, self.initializer, is_decoder=True, is_last=True, scope="decoder_output")
 
-            else:
-                pass
+            # add gausian noise
+            tensor = gaussian_noise_layer(tensor, 0.4)
+            fc_400 = fully_connected(tensor, 400, self.initializer, is_decoder=True, scope="fc_400")
+            fc_800 = fully_connected(fc_400, 800, self.initializer, is_decoder=True, scope="fc_800")
+            fc_1000 = fully_connected(fc_800, 1000, self.initializer, is_decoder=True, scope="fc_1000")
+            output = fully_connected(fc_1000, output_dim, self.initializer, is_decoder=True, is_last=True, scope="decoder_output")
+
 
             return output
 
